@@ -13,6 +13,7 @@ import androidx.compose.animation.slideInVertically
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -42,6 +43,50 @@ import com.example.superheroes.model.Hero
 import com.example.superheroes.model.HeroesRepository
 import com.example.superheroes.ui.theme.SuperheroesTheme
 
+@OptIn(ExperimentalAnimationApi::class)
+@Composable
+fun HeroesList(
+    heroes: List<Hero>,
+    modifier: Modifier = Modifier,
+    contentPadding: PaddingValues = PaddingValues(0.dp)
+) {
+    val visibleState = remember {
+        MutableTransitionState(false).apply {
+            // Start the animation immediately.
+            targetState = true
+        }
+    }
+    // Fade in entry animation for the entire list
+    AnimatedVisibility(
+        visibleState = visibleState,
+        enter = fadeIn(
+            animationSpec = spring(dampingRatio = DampingRatioLowBouncy)
+        ),
+        exit = fadeOut(),
+        modifier = modifier
+    ) {
+        LazyColumn(contentPadding = contentPadding) {
+            itemsIndexed(heroes) { index, hero ->
+                HeroListItem(
+                    hero = hero,
+                    modifier = Modifier
+                        .padding(horizontal = 16.dp, vertical = 8.dp)
+                    // Animate each list item to slide in vertically
+                        .animateEnterExit(
+                            enter = slideInVertically(
+                                animationSpec = spring(
+                                    stiffness = StiffnessVeryLow,
+                                    dampingRatio = DampingRatioLowBouncy
+                                ),
+                                initialOffsetY = { it * (index + 1) } // staggered entrance
+                            )
+                        )
+                )
+            }
+        }
+    }
+}
+
 @Composable
 fun HeroListItem(
     hero: Hero,
@@ -61,13 +106,13 @@ fun HeroListItem(
                 Text(
                     text = stringResource(hero.nameRes),
                     style = MaterialTheme.typography.displaySmall
-                )
+                    )
                 Text(
                     text = stringResource(hero.descriptionRes),
                     style = MaterialTheme.typography.bodyLarge
-                )
+                    )
             }
-            Spacer(Modifier.width(16.dp))
+            Spacer(modifier = Modifier.width(16.dp))
             Box(
                 modifier = Modifier
                     .size(72.dp)
@@ -79,49 +124,6 @@ fun HeroListItem(
                     alignment = Alignment.TopCenter,
                     contentScale = ContentScale.FillWidth
                 )
-            }
-        }
-    }
-}
-
-@OptIn(ExperimentalAnimationApi::class)
-@Composable
-fun HeroesList(
-    heroes: List<Hero>,
-    modifier: Modifier = Modifier
-) {
-    val visibleState = remember {
-        MutableTransitionState(false).apply {
-            // Start the animation immediately.
-            targetState = true
-        }
-    }
-    // Fade in entry animation for the entire list
-    AnimatedVisibility(
-        visibleState = visibleState,
-        enter = fadeIn(
-            animationSpec = spring(dampingRatio = DampingRatioLowBouncy)
-        ),
-        exit = fadeOut(),
-        modifier = modifier
-    ) {
-        LazyColumn {
-            itemsIndexed(heroes) { index, hero ->
-                HeroListItem(
-                    hero = hero,
-                    modifier = Modifier
-                        .padding(horizontal = 16.dp, vertical = 8.dp)
-                        // Animate each list item to slide in vertically
-                        .animateEnterExit(
-                            enter = slideInVertically(
-                                animationSpec = spring(
-                                    stiffness = StiffnessVeryLow,
-                                    dampingRatio = DampingRatioLowBouncy
-                                ),
-                                initialOffsetY = { it * (index + 1) } // staggered entrance
-                            )
-                        )
-                    )
             }
         }
     }
@@ -145,9 +147,13 @@ fun HeroPreview() {
 @Composable
 fun HeroesPreview() {
     SuperheroesTheme(darkTheme = false) {
-        Surface(
+        Surface (
             color = MaterialTheme.colorScheme.background
         ) {
+            /* Important: It is not a good practice to access data source directly from the UI.
+            In later units you will learn how to use ViewModel in such scenarios that takes the
+            data source as a dependency and exposes heroes.
+            */
             HeroesList(heroes = HeroesRepository.heroes)
         }
     }
